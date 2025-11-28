@@ -1,31 +1,45 @@
 from keras.layers import Dense
-from keras.models import Input, Model
 import pandas as pd
 from tcn import TCN
+import os
+
 # Temporal Convolutional Network
 # Built for time series
 
 
 def process_data():
-    train_frame = pd.read_csv("data/C-MAPSS/train_FD001.txt")
-    test_frame = pd.read_csv("data/C-MAPSS/test_FD001.txt")
-    rul_frame = pd.read_csv("data/C-MAPSS/RUL_FD001.txt")
-    return train_frame, test_frame, rul_frame
+    raw_data = []  # Holds list of pandas dataframes for each raw 
 
-time = 0   # 
+    fast = os.listdir("data_cleaning/data/fast")
+    for file in fast:
+        print(file)
+        fullPath = os.path.join("data_cleaning/data/fast",file)
+        df = pd.read_csv(fullPath)
+        raw_data.append(df)
 
-train,test,rul = process_data()
+    stream_data = pd.read_csv("data_cleaning/data/stream_labels.csv")
+    print(stream_data)
 
-model = Sequential([
-    TCN(input_shape=(time,8)),  # Length and dimension of input
-    Dense(1)  # Dense layer with one value as output (?)
-])
+    
 
-model.compile(optimizer='adam',loss='mse')
 
-# model.fit()
+def main():
+    time = 0   # 
 
-# model.evaluate()
+    process_data()
 
-# model.predict()
+    #model = Sequential([
+     #   TCN(input_shape=(time,8)),  # Length and dimension of input
+      #  Dense(1)  # Dense layer with one value as output (?)
+    #])
 
+    #model.compile(optimizer='adam',loss='mse')
+
+    # model.fit()
+
+    # model.evaluate()
+
+    # model.predict()
+
+if __name__ == "__main__":
+    main()

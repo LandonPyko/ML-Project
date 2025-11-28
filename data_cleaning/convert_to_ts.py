@@ -6,7 +6,7 @@ import pandas as pd
 def create_dirs(window_size):
 
     commands = [
-        # "unzip -qq ./archive.zip -d ./data/",
+        "unzip -qq ./archive.zip -d ./data/",
         "mkdir data/slow",
         "mkdir data/fast",
         f"mkdir time_series_data_{window_size}",
