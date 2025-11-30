@@ -18,13 +18,15 @@ class Autoencoder(Model):
     super(Autoencoder, self).__init__()
 
     self.encoder = Sequential([
-      layers.Flatten(),
+      layers.Input(shape=(64,)),
+      layers.Dense(32, activation='relu'),
       layers.Dense(latent_dim, activation='relu'),
     ])
 
     self.decoder = Sequential([
+      layers.Dense(32, activation='relu'),
       layers.Dense(64, activation='linear'),
-      layers.Reshape((64,1))
+      layers.Reshape((64, 1)),
     ])
 
   def call(self, x):
@@ -44,10 +46,16 @@ def process_data():
                       skiprows=1,
                       usecols=2)
     
-    data2 = np.loadtxt("data_cleaning/data/fast/3_1648707840_1648711920_fast.csv",
+    data2 = np.loadtxt("data_cleaning/data/fast/2_1648023300_1648035300_fast.csv",
                        delimiter=',',
                        skiprows=1,
                        usecols=2)
+    
+# 2_1648023300_1648035300_fast.csv  = Good File
+# 2_1639574100_1639584900_fast.csv = Good File
+# 3_1640012400_1640019000_fast.csv = Good File
+# 3_1648707840_1648711920_fast.csv = Bad File
+
 
     #data = np.column_stack((mean,median))  # Array containing mean and median for each window
     windows = create_windows(data)
@@ -97,19 +105,36 @@ def main():
     autoencoder = Autoencoder(latent_dim=64)
     autoencoder.compile(optimizer='adam',loss='mse')
     autoencoder.fit(X_train_norm, X_train_norm,
-                epochs=30,
+                epochs=10,
                 shuffle=True,
-                validation_data=(X_test_norm, X_test_norm))
+                validation_split = 0.1)
     
     reconstructions = autoencoder.predict(X_test_norm)
-    errors = tf.reduce_mean((X_test_norm - reconstructions)**2, axis=(1,2))
+    errors = tf.reduce_mean((X_test_norm - reconstructions)**2, axis=1)
 
-    plt.hist(errors.numpy(), bins=50)
+    # Threshold from training error
+    train_recon = autoencoder.predict(X_train_norm)
+    train_errors = tf.reduce_mean((X_train_norm - train_recon)**2, axis=1)  # This needs to be looked at
+
+
+    #threshold = train_errors.numpy().mean() + 3*train_errors.numpy().std()
+    threshold = np.percentile(train_errors, 99.9)
+    # Classify test windows
+    labels = ["Working" if e <= threshold else "Failure" for e in errors.numpy()]
+
+    plt.hist(errors.numpy(), bins=50, alpha=0.7, label="Bad file errors")
+    plt.axvline(threshold, color='red', linestyle='--', label="Threshold")
     plt.xlabel("Reconstruction error")
     plt.ylabel("Number of windows")
-    plt.title("Histogram of reconstruction error for healthy data")
-    plt.savefig("output.png")
+    plt.title("Histogram of reconstruction error for bad file")
+    plt.legend()
+    plt.savefig("output_bad.png")
     plt.close()
+
+    for i in range(len(labels)):
+       if labels[i] == "Failure":
+          print("Failure Detected")
+       
 
     '''
     window_size = 64
