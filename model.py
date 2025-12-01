@@ -14,25 +14,34 @@ import numpy as np
 # Built for time series
 
 class Autoencoder(Model):
-  def __init__(self, latent_dim):
-    super(Autoencoder, self).__init__()
+    def __init__(self, latent_dim):
+        super(Autoencoder, self).__init__()
+        self.latent_dim = 64
 
-    self.encoder = Sequential([
-      layers.Input(shape=(64,)),
-      layers.Dense(32, activation='relu'),
-      layers.Dense(latent_dim, activation='relu'),
-    ])
+        self.encoder = Sequential([
+        layers.Input(shape=(64,)),
+        layers.Dense(32, activation='relu'),
+        layers.Dense(latent_dim, activation='relu'),
+        ])
 
-    self.decoder = Sequential([
-      layers.Dense(32, activation='relu'),
-      layers.Dense(64, activation='linear'),
-      layers.Reshape((64, 1)),
-    ])
+        self.decoder = Sequential([
+        layers.Dense(32, activation='relu'),
+        layers.Dense(64, activation='linear'),
+        layers.Reshape((64, 1)),
+        ])
 
-  def call(self, x):
-    encoded = self.encoder(x)
-    decoded = self.decoder(encoded)
-    return decoded
+    def call(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded
+  
+    def get_config(self):
+        # Return only serializxable arguments
+        return {"latent_dim": self.latent_dim}
+
+    def from_config(cls, config):
+        # Keras will pass config={"latent_dim": 64}
+        return cls(**config)
 
 
 
@@ -108,7 +117,8 @@ def main():
                 epochs=10,
                 shuffle=True,
                 validation_split = 0.1)
-    
+    autoencoder.save("model.keras")
+
     reconstructions = autoencoder.predict(X_test_norm)
     errors = tf.reduce_mean((X_test_norm - reconstructions)**2, axis=1)
 
@@ -134,7 +144,8 @@ def main():
     for i in range(len(labels)):
        if labels[i] == "Failure":
           print("Failure Detected")
-       
+    
+    
 
     '''
     window_size = 64
