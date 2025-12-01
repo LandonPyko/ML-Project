@@ -46,16 +46,16 @@ class Autoencoder(Model):
 
 
 
-def process_data():
+def process_data(file):
     # just processing one file for now
 
 
-    data = np.loadtxt("data_cleaning/data/fast/2_1639574100_1639584900_fast.csv",
+    data = np.loadtxt(file,
                       delimiter=',',
                       skiprows=1,
                       usecols=2)
     
-    data2 = np.loadtxt("data_cleaning/data/fast/2_1648023300_1648035300_fast.csv",
+    data2 = np.loadtxt("data_cleaning/data/fast/3_1648707840_1648711920_fast.csv",
                        delimiter=',',
                        skiprows=1,
                        usecols=2)
@@ -65,6 +65,8 @@ def process_data():
 # 3_1640012400_1640019000_fast.csv = Good File
 # 3_1648707840_1648711920_fast.csv = Bad File
 
+
+# 2_1639641000_1639651080_fast.csv
 
     #data = np.column_stack((mean,median))  # Array containing mean and median for each window
     windows = create_windows(data)
@@ -102,12 +104,18 @@ def create_windows(data):
 def main():
     time = 0   # 
 
-    X_train, X_test = process_data()
+    X_train, X_test = process_data("data_cleaning/data/fast/2_1639574100_1639584900_fast.csv")
+    X_train2,X_test2 = process_data("data_cleaning/data/fast/2_1639641000_1639651080_fast.csv")
 
-    mean_val = X_train.mean()
-    std_val = X_train.std()
+    all_train = np.concatenate([X_train,X_train2],axis=0)
 
-    X_train_norm = (X_train - mean_val) / std_val
+    mean_val = all_train.mean()
+    std_val = all_train.std()
+
+    print("Mean val: ", mean_val)
+    print("Std val: ", std_val)
+
+    X_train_norm = (all_train - mean_val) / std_val
     X_test_norm = (X_test - mean_val) / std_val
     # instantiate model
 
@@ -117,10 +125,24 @@ def main():
                 epochs=10,
                 shuffle=True,
                 validation_split = 0.1)
+    '''
+    
+
+    X_train_norm = (X_train - mean_val) / std_val
+
+    autoencoder.fit(X_train_norm, X_train_norm,
+                epochs=10,
+                shuffle=True,
+                validation_split = 0.1)
+    '''
+
     autoencoder.save("model.keras")
 
     reconstructions = autoencoder.predict(X_test_norm)
     errors = tf.reduce_mean((X_test_norm - reconstructions)**2, axis=1)
+    np_errors = errors.numpy()
+    filtered_errors = np_errors[np_errors>0]
+
 
     # Threshold from training error
     train_recon = autoencoder.predict(X_train_norm)
@@ -128,11 +150,11 @@ def main():
 
 
     #threshold = train_errors.numpy().mean() + 3*train_errors.numpy().std()
-    threshold = np.percentile(train_errors, 99.9)
+    threshold = np.percentile(train_errors.numpy(), 99.99)
     # Classify test windows
     labels = ["Working" if e <= threshold else "Failure" for e in errors.numpy()]
 
-    plt.hist(errors.numpy(), bins=50, alpha=0.7, label="Bad file errors")
+    plt.hist(filtered_errors, bins=50, alpha=0.7, label="Bad file errors")
     plt.axvline(threshold, color='red', linestyle='--', label="Threshold")
     plt.xlabel("Reconstruction error")
     plt.ylabel("Number of windows")
@@ -141,37 +163,13 @@ def main():
     plt.savefig("output_bad.png")
     plt.close()
 
-    for i in range(len(labels)):
-       if labels[i] == "Failure":
-          print("Failure Detected")
-    
-    
 
-    '''
-    window_size = 64
-    num_features = 2
-    model = Sequential([
-        TCN(
-            nb_filters = 64,
-            kernel_size = 3,
-            dilations = [1,2,4,8,16,32,64],
-            dropout_rate = .05,
-            return_sequences = False,
-            input_shape=(window_size,num_features)
-            ),
+    plt.plot(X_train_norm[0].squeeze(), label="Original")
+    plt.plot(autoencoder.predict(X_train_norm[0:1])[0].squeeze(), label="Reconstructed")
+    plt.legend()
+    plt.savefig("test.png")
+    plt.close()
 
-        Dense(1,activation=None)  # Dense layer with one value as output (?)
-    ])
-    
-
-    #model.compile(optimizer='adam',loss='mse')
-
-    #model.fit()
-
-    #model.evaluate()
-
-    #model.predict()
-    '''
 
 if __name__ == "__main__":
     main()
