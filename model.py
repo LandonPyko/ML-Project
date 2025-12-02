@@ -21,7 +21,7 @@ class Autoencoder(Model):
         self.encoder = Sequential([
         layers.Input(shape=(64,)),
         layers.Dense(32, activation='relu'),
-        layers.Dense(latent_dim, activation='relu'),
+        layers.Dense(16, activation='relu'),
         ])
 
         self.decoder = Sequential([
@@ -137,6 +137,7 @@ def main():
     '''
 
     autoencoder.save("model.keras")
+    autoencoder.encoder.summary()
 
     reconstructions = autoencoder.predict(X_test_norm)
     errors = tf.reduce_mean((X_test_norm - reconstructions)**2, axis=1)
