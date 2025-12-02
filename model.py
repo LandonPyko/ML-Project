@@ -122,7 +122,7 @@ def main():
     autoencoder = Autoencoder(latent_dim=64)
     autoencoder.compile(optimizer='adam',loss='mse')
     autoencoder.fit(X_train_norm, X_train_norm,
-                epochs=10,
+                epochs=50,
                 shuffle=True,
                 validation_split = 0.1)
     '''
@@ -137,7 +137,11 @@ def main():
     '''
 
     autoencoder.save("model.keras")
+    print("Encoder Summary:\n")
     autoencoder.encoder.summary()
+    print("\nDecoder Summary")
+    autoencoder.decoder.summary()
+
 
     reconstructions = autoencoder.predict(X_test_norm)
     errors = tf.reduce_mean((X_test_norm - reconstructions)**2, axis=1)
@@ -167,7 +171,10 @@ def main():
 
     plt.plot(X_train_norm[0].squeeze(), label="Original")
     plt.plot(autoencoder.predict(X_train_norm[0:1])[0].squeeze(), label="Reconstructed")
+    plt.xticks([])
+    plt.yticks([])
     plt.legend()
+    plt.title("Original vs. Reconstructed")
     plt.savefig("test.png")
     plt.close()
 
